@@ -1,0 +1,45 @@
+# Workflow GitHub Actions — Monitoraggio prezzi con Playwright
+# Esegue lo script ogni 6 ore usando un browser headless per leggere
+# i prezzi da siti JavaScript come Consum.
+
+name: Controlla prezzo Postre de COCO
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  check-price:
+    name: Controlla e notifica
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configura Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installa dipendenze Python
+        run: |
+          pip install --upgrade pip
+          pip install playwright requests
+
+      - name: Installa browser Chromium
+        run: playwright install chromium --with-deps
+
+      - name: Esegui monitoraggio prezzi
+        run: python price_monitor.py
+
+      - name: Salva price_history.json nel repository
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add price_history.json
+          git diff --cached --quiet || git commit -m "chore: aggiorna price_history.json [skip ci]"
+          git push
