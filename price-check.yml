@@ -1,7 +1,3 @@
-# Workflow GitHub Actions — Monitoraggio prezzi con Playwright
-# Esegue lo script ogni 6 ore usando un browser headless per leggere
-# i prezzi da siti JavaScript come Consum.
-
 name: Controlla prezzo Postre de COCO
 
 on:
@@ -26,12 +22,10 @@ jobs:
           python-version: "3.11"
 
       - name: Installa dipendenze Python
-        run: |
-          pip install --upgrade pip
-          pip install playwright requests
+        run: pip install playwright requests
 
       - name: Installa browser Chromium
-        run: playwright install chromium --with-deps
+        run: python -m playwright install chromium --with-deps
 
       - name: Esegui monitoraggio prezzi
         run: python price_monitor.py
