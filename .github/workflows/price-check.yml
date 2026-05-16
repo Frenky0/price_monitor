@@ -1,0 +1,60 @@
+# Workflow GitHub Actions — Monitoraggio prezzi
+# Esegue lo script ogni 6 ore e salva la storia dei prezzi
+# nel repository tramite commit automatico.
+#
+# SETUP (una tantum):
+#   1. Fai un fork / crea un repository su GitHub
+#   2. Carica price_monitor.py nella root del repo
+#   3. Modifica NTFY_TOPIC in price_monitor.py con il tuo canale
+#   4. Abilita "Read and write permissions" per il GITHUB_TOKEN:
+#      Repo → Settings → Actions → General → Workflow permissions
+
+name: Controlla prezzo Postre de COCO
+
+on:
+  # Esecuzione automatica ogni 6 ore
+  schedule:
+    - cron: "0 */6 * * *"
+
+  # Permette di avviare manualmente dalla scheda Actions
+  workflow_dispatch:
+
+jobs:
+  check-price:
+    name: Controlla e notifica
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Scarica il codice del repository (incluso price_history.json se presente)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Necessario per poter fare push alla fine
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Imposta Python
+      - name: Configura Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Installa le dipendenze
+      - name: Installa dipendenze
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml
+
+      # 4. Esegui lo script
+      - name: Esegui monitoraggio prezzi
+        run: python price_monitor.py
+
+      # 5. Salva price_history.json nel repository con un commit automatico
+      #    In questo modo il prossimo run avrà il prezzo precedente disponibile.
+      - name: Salva price_history.json nel repository
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add price_history.json
+          # Fa commit solo se il file è cambiato (evita commit vuoti)
+          git diff --cached --quiet || git commit -m "chore: aggiorna price_history.json [skip ci]"
+          git push
